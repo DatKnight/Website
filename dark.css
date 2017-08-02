@@ -1,0 +1,196 @@
+/* This sets all h1 elements to have a blue colour and be centered on the page relative to the body  */
+h1 {
+  color: white;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* This sets all h2 elements to have a blue colour and be centered on the page relative to the body  */
+h2 {
+  color: white;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* This sets all h3 elements to have a blue colour and be centered on the page relative to the body  */
+h3 {
+  color: white;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+/* This applies 10 pixels of padding to the left of all p elements */
+p {
+  padding-left: 10px;
+}
+
+/* This increases the margin on the left of all the button elements by 20 pixels */
+button {
+  margin-left: 20px;
+}
+
+/* This sets the footer's background colour to grey, and adds 30 pixels of padding on all directions */
+footer {
+  background: #3c3c3c;
+  padding: 30px;
+  color: #ccc;
+}
+
+/* This is the css for the picture on the index page, it sets the width to 15% of the page, aligns it to the middle of the page, and adds 15 pixels of padding all around the image */
+#profile {
+  width: 15%;
+  display: block;
+  margin: 0 auto;
+  padding: 15px;
+}
+
+.break{
+  background-color: #3c3c3c;
+  color: white;
+}
+
+.head{
+  background-color: #3c3c3c;
+  padding-bottom: 10px;
+}
+
+.nav {
+  max-width: 740px;
+  margin: 0 auto;
+  text-align: right;
+  padding: 30px;
+}
+
+/* This in combination with the .navlist css ensures that the navigation links in the navigation bar at the top of each page are all in line with each other */
+.navli {
+  display: inline;
+}
+
+button {
+  text-align: center;
+}
+
+.navlist{
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.navlink {
+  padding: 6px 8px;
+  color: white;
+}
+
+
+.themelist{
+  display: inline;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+
+.themelink {
+  padding: 6px 8px;
+  color: white;
+}
+
+.themeli {
+  display: inline;
+}
+
+.theme {
+  text-align: center;
+}
+
+.name {
+  color: white;
+  text-align: center;
+}
+
+/* This text both sets up some properties for later CSS, and changes the text in all of the pages to center in case the screen size is smaller than a specific size */
+html,
+body{
+  text-align: center;
+  margin:0;
+  padding:0;
+  height:100%;
+  background-color: #7A7E80;
+}
+
+/* Any element with this class applied to them will have whitespace the size of 20% of the page between itself and both sides of the screen */
+.lorem {
+  margin-left: 20%;
+  margin-right: 20%;
+  text-align: left;
+  color: white;
+}
+
+/* This CSS ensures that when the mouse cursor hovers over a link in the navbar, it changes to a dark blue colour temporarily */
+.navlink:hover{
+    color: #003264;
+  text-decoration: none;
+}
+
+/* Work */
+
+.exampleimg {
+  margin-left: 21%;
+  width: 30%;
+  margin-bottom: 5px;
+}
+
+/* About */
+
+/* This CSS sets the secret link in the navbar on the About page to have a default colour that matches with the background of the navbar, to make it blend in */
+#easterlink {
+  color: #392e6d;
+}
+
+/* This CSS changes the colour of the secret link to white whenever a user hovers over it, so that it becomes revealed */
+#easterlink:hover{
+  color: white;
+}
+
+.easterimg {
+  display: block;
+  margin: 0 auto;
+}
+
+/* Keeping Footer Down */
+/* This is all CSS put in place to ensure that the footer element is always at the bottom of the page, no matter how large or small they are */
+#container {
+   min-height:100%;
+   position:relative;
+}
+#header {
+   background:#3c3c3c;
+   padding:10px;
+}
+#body {
+   padding:10px;
+   padding-bottom:60px;   /* Height of the footer */
+}
+#footer {
+   position:absolute;
+   bottom:0;
+   width:100%;
+   height:60px;   /* Height of the footer */
+   background:#3c3c3c;
+}
+
+/* Default settings for website pages */
+/* These are the settings for when the screen size is above 600 pixels, the upper size of most phone screens */
+@media (min-width: 600px) {
+  body{
+    text-align: left;
+    margin:0;
+    padding:0;
+    height:100%;
+    background-color: #7A7E80;
+  }
+
+  .contactform{
+    margin-left: 5px;
+    margin-bottom: 5px;
+  }
+}
