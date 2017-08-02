@@ -1,9 +1,7 @@
-alert("Working")
 var imgFlip = true;
 var start = false;
 
 function changeimg(id,src){
-  console.log("Test")
 
   if(start == false){
     orig = document.getElementById(id).src;
@@ -19,11 +17,6 @@ function changeimg(id,src){
     document.getElementById(id).src = orig;
     imgFlip = true;
   }
-
-}
-
-function test(){
-  alert("Test");
 
 }
 
