@@ -2,26 +2,32 @@
 
 <script>
 
+//Assign the canvas element to a variable and create a 2d context for it
 var c = document.getElementById("canvas");
 var cc = c.getContext("2d");
 
+//Get appropriate values of canvas for use later
 var width = document.getElementById("canvas").getAttribute("width");
 var height = document.getElementById("canvas").getAttribute("height");;
 
+//Declare and initialize several variables/arrays related to the player and ball for use later
 var ball = [width/2,height/2,0,0];
 paddles = [0,0]
 psize = 40
 var mx = 0
 var my = 0
 
+//Declare and initialize several variables/arrays related to the rest of the game for use later
 var score = 0;
 var time = 0;
 var count = 0;
 var debug = false;
 var lost = false;
 var main = true;
-var bot = true;
+var bot = false;
 
+//Once the window loads, set up the two event listeners for mouse movement and click detectCollision
+//Then set up the repeating function to constantly draw new "frames"
 window.onload = function(){
 	setInterval(update,1000/60);
 	c.addEventListener("mousemove",function(event){
@@ -42,7 +48,7 @@ window.onload = function(){
 }
 
 
-
+//Main function to draw frames, handles all of the functions and strings them together in order
 function update(){
 	drawBack();
 	checkBot();
@@ -68,11 +74,13 @@ function update(){
 
 }
 
+//Function to draw the large black square that serves as the background of the game
 function drawBack(){
 	cc.fillStyle = "black";
 	cc.fillRect(0,0,width,height);
 }
 
+//Draw debug information about things like the mouse position, ball velocity and acceleration, etc.
 function drawInfo(){
 	cc.fillStyle = "white";
 	cc.font = "10px sans-serif";
@@ -85,12 +93,14 @@ function drawInfo(){
 	cc.fillText("x: " + ball[0],ball[0] + 5,ball[1] + 20);
 }
 
+//Draw the score in the top left of the screen
 function drawScore(){
 	cc.fillStyle = "white";
 	cc.font = "10px sans-serif";
 	cc.fillText("Score: " + score,5,10);
 }
 
+//Derive a time String in the format "MM:SS" from the time variable and display it below the score.
 function drawTime(){
 	min = Math.floor(time / 60);
 	sec = time - (min * 60);
@@ -103,11 +113,13 @@ function drawTime(){
 	cc.fillText("Time: " + min + ":" + sec,5,20);
 }
 
+//Draw the ball at the coordinates specified in the array
 function drawBall(){
 	cc.fillStyle = "white";
 	cc.fillRect(ball[0] - 5,ball[1] - 5,10,10);
 }
 
+//Draw the four paddles that represent the "Player"
 function drawPlayer(){
 	cc.fillStyle = "white";
 	cc.fillRect(paddles[0] - (psize/2),5,psize,10);
@@ -116,7 +128,7 @@ function drawPlayer(){
 	cc.fillRect(width - 15,paddles[1] - (psize/2),10,psize);
 }
 
-
+//Draw the game over screen frame
 function gameOver(){
 	cc.fillStyle = "white";
 	cc.font = "40px sans-serif";
@@ -125,6 +137,7 @@ function gameOver(){
 	cc.fillText("Continue",260,350);
 }
 
+//Draw the main menu frame and check to see if the user has moused over the "Start" button
 function mainMenu(){
 	cc.fillStyle = "white";
 	cc.font = "40px sans-serif";
@@ -138,6 +151,7 @@ function mainMenu(){
 	}
 }
 
+//Update the time variable every time 60 frames (or 1 second) pass
 function checkTime(){
 	if(count == 60){
 		time++;
@@ -146,6 +160,7 @@ function checkTime(){
 	}
 }
 
+//Check if the score variable is divisible by 5 and if so, choose a random velocity direction to increase
 function checkScore(){
 	if(score % 5 == 0 && score > 0){
 		x = Math.random();
@@ -158,11 +173,13 @@ function checkScore(){
 	}
 }
 
+//Increase the velocity of the ball, accounting for both positive and negative values
 function speedUp(x){
 	if(ball[x] > 0 && ball[x] <= 15){ball[x] += 0.5;}
 	if(ball[x] < 0 && ball[x] >= -15){ball[x] -= 0.5;}
 }
 
+//Grant the ball a random velocity on both axis, but only if the score is 0
 function randomVelocity(){
 	if(score == 0 && main == false){
 		x = Math.random();
@@ -182,6 +199,7 @@ function randomVelocity(){
 	}
 }
 
+//Reset all game related variables and set the ball back to its original position
 function reset(){
 	score = 0;
 	ball = [width/2,height/2,0,0];
@@ -190,7 +208,7 @@ function reset(){
 	time = 0;
 }
 
-
+//Check whether or not the ball has collided with a paddle
 function detectCollision(){
 	ballx = ball[0];
 	bally = ball[1];
@@ -207,7 +225,7 @@ function detectCollision(){
 		}
 	}
 
-	if(bally >= height - 20 || bally <= 20){
+		if(bally >= height - 20 || bally <= 20){
 		if(ballx >= px - (psize/2) && ballx <= px + (psize/2)){
 			reflecty();
 			score++
@@ -219,30 +237,24 @@ function detectCollision(){
 	}
 }
 
+//Reverse the ball's velocity on the x-axis
 function reflectx(){
 	ball[2] = ball[2] * -1;
 
 }
 
+//Reverse the ball's velocity on the y-axis
 function reflecty(){
 	ball[3] = ball[3] * -1
 }
 
+//Change the ball's x and y coordinates based on its velocity values
 function applyVelocity(){
-	ballx = ball[0];
-	bally = ball[1];
-	if(ballx == 0 + 11 || ballx == 600 - 11){
-		ball[0] = 0;
-	}
-	if(bally == 0 + 11 || bally == 600 - 11){
-		ball[1] = 0;
-	}
-	else {
-		ball[0] = ballx + ball[2];
-		ball[1] = bally + ball[3];
-	}
+	ball[0] += ball[2];
+	ball[1] += ball[3];
 }
 
+//Toggle debug mode
 function toggleDebug(){
 	if(debug == true){
 		debug = false;
@@ -252,6 +264,7 @@ function toggleDebug(){
 	}
 }
 
+//Check whether or not aimbot is enabled, and if so override the mouse coordinates
 function checkBot(){
 	if(bot == true){
 		paddles[0] = ball[0];
@@ -266,16 +279,291 @@ function checkBot(){
 </script>
 <body>
 	<br>
-	<script src="Javascript/javascript.js" type="text/javascript"></script>
+	<script src="../Javascript/javascript.js"></script>
 
 	<div id="spoiler" style="display:none">
-		dasdasdasd
+		<pre>
+
+//Assign the canvas element to a variable and create a 2d context for it
+var c = document.getElementById("canvas");
+var cc = c.getContext("2d");
+
+//Get appropriate values of canvas for use later
+var width = document.getElementById("canvas").getAttribute("width");
+var height = document.getElementById("canvas").getAttribute("height");;
+
+//Declare and initialize several variables/arrays related to the player and ball for use later
+var ball = [width/2,height/2,0,0];
+paddles = [0,0]
+psize = 40
+var mx = 0
+var my = 0
+
+//Declare and initialize several variables/arrays related to the rest of the game for use later
+var score = 0;
+var time = 0;
+var count = 0;
+var debug = false;
+var lost = false;
+var main = true;
+var bot = true;
+
+//Once the window loads, set up the two event listeners for mouse movement and click detectCollision
+//Then set up the repeating function to constantly draw new "frames"
+window.onload = function(){
+	setInterval(update,1000/60);
+	c.addEventListener("mousemove",function(event){
+		mx = event.clientX;
+		my = event.clientY;
+
+		if(mx < 25){ mx = 25; }
+		if(my < 25){ my = 25; }
+		if(mx > width - 25){ mx = width - 25; }
+		if(my > height - 25){ my = height - 25;}
+
+		paddles = [mx,my];
+	});
+
+	c.addEventListener("click",function(event){
+		randomVelocity();
+	});
+}
+
+
+//Main function to draw frames, handles all of the functions and strings them together in order
+function update(){
+	drawBack();
+	checkBot();
+	if(main == true){
+		mainMenu();
+	}
+	else {
+		drawScore();
+		drawBall();
+		drawPlayer();
+		drawTime();
+
+		applyVelocity();
+		checkTime();
+		detectCollision()
+		count++
+	}
+
+
+	if(debug == true){
+		drawInfo();
+	}
+
+}
+
+//Function to draw the large black square that serves as the background of the game
+function drawBack(){
+	cc.fillStyle = "black";
+	cc.fillRect(0,0,width,height);
+}
+
+//Draw debug information about things like the mouse position, ball velocity and acceleration, etc.
+function drawInfo(){
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("mx: " + mx,mx + 5,my + 20);
+	cc.fillText("my: " + my,mx + 5,my + 30);
+	cc.fillText("vx: " + ball[2],5,30);
+	cc.fillText("vy: " + ball[3],5,40);
+	cc.fillText("ax: " + ball[4],5,50);
+	cc.fillText("ay: " + ball[5],5,60);
+	cc.fillText("x: " + ball[0],ball[0] + 5,ball[1] + 20);
+}
+
+//Draw the score in the top left of the screen
+function drawScore(){
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("Score: " + score,5,10);
+}
+
+//Derive a time String in the format "MM:SS" from the time variable and display it below the score.
+function drawTime(){
+	min = Math.floor(time / 60);
+	sec = time - (min * 60);
+
+	if(min < 10){min = "0" + min}
+	if(sec < 10){sec = "0" + sec}
+
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("Time: " + min + ":" + sec,5,20);
+}
+
+//Draw the ball at the coordinates specified in the array
+function drawBall(){
+	cc.fillStyle = "white";
+	cc.fillRect(ball[0] - 5,ball[1] - 5,10,10);
+}
+
+//Draw the four paddles that represent the "Player"
+function drawPlayer(){
+	cc.fillStyle = "white";
+	cc.fillRect(paddles[0] - (psize/2),5,psize,10);
+	cc.fillRect(paddles[0] - (psize/2),height - 15,psize,10);
+	cc.fillRect(5,paddles[1] - (psize/2),10,psize);
+	cc.fillRect(width - 15,paddles[1] - (psize/2),10,psize);
+}
+
+//Draw the game over screen frame
+function gameOver(){
+	cc.fillStyle = "white";
+	cc.font = "40px sans-serif";
+	cc.fillText("Game Over",200,250);
+	cc.font = "20px sans-serif";
+	cc.fillText("Continue",260,350);
+}
+
+//Draw the main menu frame and check to see if the user has moused over the "Start" button
+function mainMenu(){
+	cc.fillStyle = "white";
+	cc.font = "40px sans-serif";
+	cc.fillText("4 Paddle Pong",(width/2) - 160,(height/2) - 50);
+	cc.font = "20px sans-serif";
+	cc.fillText("Start",(width/2) - 40,(height/2) + 50);
+	if(mx >= (width/2) - 30 && mx <= (width/2) + 10){
+		if(my >= (height/2) + 40 && my <= (height/2) + 60){
+			main = false;
+		}
+	}
+}
+
+//Update the time variable every time 60 frames (or 1 second) pass
+function checkTime(){
+	if(count == 60){
+		time++;
+		count = 0;
+
+	}
+}
+
+//Check if the score variable is divisible by 5 and if so, choose a random velocity direction to increase
+function checkScore(){
+	if(score % 5 == 0 && score > 0){
+		x = Math.random();
+		if(x < 1/3){speedUp(2);}
+		if(x > 1/3 && x < 2/3 ){speedUp(3);}
+		if(x > 2/3){
+			speedUp(2);
+			speedUp(3);
+		}
+	}
+}
+
+//Increase the velocity of the ball, accounting for both positive and negative values
+function speedUp(x){
+	if(ball[x] > 0 && ball[x] <= 15){ball[x] += 0.5;}
+	if(ball[x] < 0 && ball[x] >= -15){ball[x] -= 0.5;}
+}
+
+//Grant the ball a random velocity on both axis, but only if the score is 0
+function randomVelocity(){
+	if(score == 0 && main == false){
+		x = Math.random();
+		y = Math.random();
+		if(x < 0.5){
+			ball[2] = -1
+		}
+		else {
+			ball[2] = 1
+		}
+		if(y < 0.5){
+			ball[3] = -1
+		}
+		else{
+			ball[3] = 1
+		}
+	}
+}
+
+//Reset all game related variables and set the ball back to its original position
+function reset(){
+	score = 0;
+	ball = [width/2,height/2,0,0];
+	lost = false;
+	count = 0;
+	time = 0;
+}
+
+//Check whether or not the ball has collided with a paddle
+function detectCollision(){
+	ballx = ball[0];
+	bally = ball[1];
+	px = paddles[0];
+	py = paddles[1];
+	if(ballx >= width - 20 || ballx <= 20){
+		if(bally >= py - (psize/2) && bally <= py + (psize/2)){
+			reflectx();
+			score++
+			checkScore();
+		}
+		else{
+			reset();
+		}
+	}
+
+		if(bally >= height - 20 || bally <= 20){
+		if(ballx >= px - (psize/2) && ballx <= px + (psize/2)){
+			reflecty();
+			score++
+			checkScore();
+		}
+		else{
+			reset();
+		}
+	}
+}
+
+//Reverse the ball's velocity on the x-axis
+function reflectx(){
+	ball[2] = ball[2] * -1;
+
+}
+
+//Reverse the ball's velocity on the y-axis
+function reflecty(){
+	ball[3] = ball[3] * -1
+}
+
+//Change the ball's x and y coordinates based on its velocity values
+function applyVelocity(){
+	ball[0] += ball[2];
+	ball[1] += ball[3];
+}
+
+//Toggle debug mode
+function toggleDebug(){
+	if(debug == true){
+		debug = false;
+	}
+	else{
+		debug = true;
+	}
+}
+
+//Check whether or not aimbot is enabled, and if so override the mouse coordinates
+function checkBot(){
+	if(bot == true){
+		paddles[0] = ball[0];
+		paddles[1] = ball[1];
+		if(paddles[0] < 25){ paddles[0] = 25; }
+		if(paddles[1] < 25){ paddles[1] = 25; }
+		if(paddles[0] > width - 25){ paddles[0] = width - 25; }
+		if(paddles[1] > height - 25){ paddles[1] = height - 25;}
+	}
+}
+	</pre>
 	</div>
 
 	<button type="button" title="Click to show/hide code" onclick="spoilerToggle('spoiler')">Show/Hide Code</button>
 
 	<br>
-	<a href="javascript:history.back()">Back</a>
+	<a href="../work.html">Back</a>
 
 
 
