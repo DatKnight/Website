@@ -24,27 +24,18 @@ function changeSize(textSize){
 
   if (textSize == "normal") {
     var paragraphs = document.getElementsByClassName('lorem');
+    alert(paragraphs);
     for(i=0; i<paragraphs.length; i++) {
       paragraphs[i].style.fontSize = '1em';
   }
 
-}
-
   else if (textSize == "large"){
     var paragraphs = document.getElementsByClassName('lorem');
+    alert(paragraphs);
     for(i=0; i<paragraphs.length; i++) {
       paragraphs[i].style.fontSize = '2em';
-    }
-
   }
 
-}
-
-function spoilerToggle(id){
-  if(document.getElementById(id).style.display == 'none'){
-     document.getElementById(id).style.display = ''}
-  else {
-    document.getElementById(id) .style.display = 'none'}
 }
 
 // Style switching code
