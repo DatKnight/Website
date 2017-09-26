@@ -1,0 +1,613 @@
+<canvas width = "600" height = "600" id = "canvas"></canvas>
+
+<script>
+
+//Get canvas object and associate a context to it
+var c = document.getElementById("canvas");
+var cc = c.getContext("2d");
+
+//Delcare and initialize some variables for use in the game
+var ball = [300,450,0,0,0,0];
+var mx = 300
+var my = 300
+var walls = [600,750,900,1050];
+var holes = [600,600,600,600];
+var holeSize = 35;
+
+var wallSpeed = 2;
+var score = 0;
+var time = 0;
+var count = 0;
+var debug = false;
+var lost = false;
+var main = true;
+
+//When window loads, assign random coordinates to the holes array, then create a listener to detect the mouse location
+//Set up a loop for the "drawFrame" function
+window.onload = function(){
+	setInterval(update,1000/60);
+	setHoles();
+	c.addEventListener("mousemove",function(event){
+		mx = event.clientX;
+		my = event.clientY;
+	});
+}
+
+//Function to draw each "frame" using the assorted "draw" functions
+function update(){
+	drawBack();
+	if(main == true){
+		mainMenu();
+	}
+	else {
+	if(lost == true){
+		gameOver();
+		if(ball[0] >= 260 && ball[0] <= 350){
+			if(ball[1] >= 350 && ball[1] <= 360){
+				reset();
+			}
+		}
+		if(ball[0] >= 590 && ball[0] <= 600){
+			if(ball[1] >= 590 && ball[1] <= 600){
+				toggleDebug();
+			}
+		}
+	}
+	else {
+		drawWalls();
+		drawHoles();
+
+		detectCollision()
+		moveWalls();
+
+		count++
+	}
+	}
+
+	if(debug == true){
+		drawInfo();
+	}
+
+	drawScore();
+	drawBall();
+	drawTime();
+	getAcceleration();
+	applyAcceleration();
+	applyVelocity();
+	checkTime();
+
+}
+
+//Draw the black square that serves as the background for the game
+function drawBack(){
+	cc.fillStyle = "black";
+	cc.fillRect(0,0,600,600);
+}
+
+//Draw the debug information
+function drawInfo(){
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("mx: " + mx,mx + 5,my + 20);
+	cc.fillText("my: " + my,mx + 5,my + 30);
+	cc.fillText("vx: " + ball[2],5,30);
+	cc.fillText("vy: " + ball[3],5,40);
+	cc.fillText("ax: " + ball[4],5,50);
+	cc.fillText("ay: " + ball[5],5,60);
+	for(x = 0; x < walls.length;x++){
+		cc.fillText(walls[x],walls[x] + 7,590);
+		cc.fillText(holes[x],walls[x] + 7,holes[x])
+	}
+}
+
+//Draw the current score as part of the HUD
+function drawScore(){
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("Score: " + score,5,10);
+}
+
+//Calculate a time display text using the value in the time variable and display it as part of the HUD
+function drawTime(){
+	min = Math.floor(time / 60);
+	sec = time - (min * 60);
+
+	if(min < 10){min = "0" + min}
+	if(sec < 10){sec = "0" + sec}
+
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("Time: " + min + ":" + sec,5,20);
+}
+
+//Draw the ball at the current xy coordinates
+function drawBall(){
+	cc.fillStyle = "white";
+	cc.fillRect(ball[0] - 5,ball[1] - 5,10,10);
+}
+
+//Draw all of the walls using the coordinates specified in the array
+function drawWalls(){
+	for(x = 0;x < walls.length;x++){
+		drawWall(x);
+	}
+}
+
+//Draw a wall using the coordinate from the array element "x"
+function drawWall(x){
+	cc.fillStyle = "white";
+	cc.fillRect(walls[x],0,5,600);
+}
+
+//Draw all of the holes using the coordinates specified in the array
+function drawHoles(){
+	for(x = 0;x < holes.length;x++){
+		drawHole(x);
+	}
+}
+
+//Draw a hole using the coordinate from the array element "x"
+function drawHole(x){
+	cc.fillStyle = "black";
+	cc.fillRect(walls[x],holes[x],5,holeSize);
+}
+
+//Draw the gameover screen
+function gameOver(){
+	cc.fillStyle = "white";
+	cc.font = "40px sans-serif";
+	cc.fillText("Game Over",200,250);
+	cc.font = "20px sans-serif";
+	cc.fillText("Continue",260,350);
+}
+
+//Draw the mainMenu screen
+function mainMenu(){
+	cc.fillStyle = "white";
+	cc.font = "40px sans-serif";
+	cc.fillText("Almost Flappy-Bird",140,250);
+	cc.font = "20px sans-serif";
+	cc.fillText("Start",260,350);
+	if(mx >= 270 && mx <= 310){
+		if(my >= 340 && my <= 360){
+			main = false;
+		}
+	}
+}
+
+//Increment the time variable by one every 60 frames
+function checkTime(){
+	if(count == 60){
+		time++;
+		count = 0;
+		if(time % 30 == 0){
+			wallSpeed += 0.5;
+		}
+	}
+}
+
+//Reset all of the variables to the default value and reset the hole coordinates to random values
+function reset(){
+	walls = [600,750,900,1050];
+	holes = [600,600,600,600];
+	wallSpeed = 2;
+	score = 0;
+	ball = [300,300,0,0,0,0];
+	mx = 300
+	my = 300
+	lost = false;
+	count = 0;
+	time = 0;
+	setHoles();
+}
+
+//Change the coordinates of every wall in the array every frame
+function moveWalls() {
+	for(x = 0;x < walls.length;x++){ //loop through walls array
+		walls[x] -= wallSpeed;
+		if(walls[x] == 0){ //check if wall needs to be reset
+			walls[x] = 600;
+			setHole(x);
+		}
+	}
+}
+
+//Assgn a random value to a specified element in the array
+function setHole(x){
+	holey = Math.random();
+	holey = Math.floor(holey * 500);
+	holey = holey + 50;
+	holes[x] = holey
+}
+
+//Assign a random value to every element in the holes array
+function setHoles(){
+	for(x = 0; x < holes.length; x++){
+		setHole(x);
+	}
+}
+
+//Detect whether or not the ball has collided with any of the walls in the array
+function detectCollision(){
+	ballx = ball[0];
+	bally = ball[1]
+	for(x = 0;x < walls.length;x++){
+		if(ballx <= walls[x] + wallSpeed && ballx >= walls[x] - 5){
+			if(bally + 5  > holes[x] + holeSize || bally - 5  < holes[x]){
+				lost = true;
+
+			}
+			else{
+				score += 1
+			}
+		}
+	}
+}
+
+//Get the acceleration value for the ball based on its distance from the mouse
+function getAcceleration(){
+	ay = Math.floor((my - ball[1]) / 10);
+	ax = Math.floor((mx - ball[0]) / 10);
+	if(ay > 10) {
+		ay = 10;
+	}
+	if(ay < -10) {
+		ay = -10;
+	}
+	if(ax > 10){
+		ax = 10;
+	}
+	if(ax < -10) {
+		ax = -10;
+	}
+	ball[4] = ax;
+	ball[5] = ay;
+}
+
+//Change the ball's coordinates using its velocity values
+function applyVelocity(){
+	ballx = ball[0];
+	bally = ball[1];
+	if(ballx == 0 + 11 || ballx == 600 - 11){
+		ball[0] = 0;
+	}
+	if(bally == 0 + 11 || bally == 600 - 11){
+		ball[1] = 0;
+	}
+	else {
+		ball[0] = ballx + ball[2];
+		ball[1] = bally + ball[3];
+	}
+}
+
+//Change the ball's velocity using its acceleration values
+function applyAcceleration(){
+	ballax = ball[4];
+	ballay = ball[5];
+	ball[2] = ballax + ball[4];
+	ball[3] = ballay + ball[5];
+}
+
+//Toggle debug mode
+function toggleDebug(){
+	if(debug == true){
+		debug = false;
+	}
+	else{
+		debug = true;
+	}
+}
+
+</script>
+<body>
+	<br>
+	<script src="../Javascript/javascript.js"></script>
+
+	<div id="spoiler" style="display:none">
+		<pre>
+//Get canvas object and associate a context to it
+var c = document.getElementById("canvas");
+var cc = c.getContext("2d");
+
+//Delcare and initialize some variables for use in the game
+var ball = [300,450,0,0,0,0];
+var mx = 300
+var my = 300
+var walls = [600,750,900,1050];
+var holes = [600,600,600,600];
+var holeSize = 35;
+
+var wallSpeed = 2;
+var score = 0;
+var time = 0;
+var count = 0;
+var debug = false;
+var lost = false;
+var main = true;
+
+//When window loads, assign random coordinates to the holes array, then create a listener to detect the mouse location
+//Set up a loop for the "drawFrame" function
+window.onload = function(){
+	setInterval(update,1000/60);
+	setHoles();
+	c.addEventListener("mousemove",function(event){
+		mx = event.clientX;
+		my = event.clientY;
+	});
+}
+
+//Function to draw each "frame" using the assorted "draw" functions
+function update(){
+	drawBack();
+	if(main == true){
+		mainMenu();
+	}
+	else {
+	if(lost == true){
+		gameOver();
+		if(ball[0] >= 260 && ball[0] <= 350){
+			if(ball[1] >= 350 && ball[1] <= 360){
+				reset();
+			}
+		}
+		if(ball[0] >= 590 && ball[0] <= 600){
+			if(ball[1] >= 590 && ball[1] <= 600){
+				toggleDebug();
+			}
+		}
+	}
+	else {
+		drawWalls();
+		drawHoles();
+
+		detectCollision()
+		moveWalls();
+
+		count++
+	}
+	}
+
+	if(debug == true){
+		drawInfo();
+	}
+
+	drawScore();
+	drawBall();
+	drawTime();
+	getAcceleration();
+	applyAcceleration();
+	applyVelocity();
+	checkTime();
+
+}
+
+//Draw the black square that serves as the background for the game
+function drawBack(){
+	cc.fillStyle = "black";
+	cc.fillRect(0,0,600,600);
+}
+
+//Draw the debug information
+function drawInfo(){
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("mx: " + mx,mx + 5,my + 20);
+	cc.fillText("my: " + my,mx + 5,my + 30);
+	cc.fillText("vx: " + ball[2],5,30);
+	cc.fillText("vy: " + ball[3],5,40);
+	cc.fillText("ax: " + ball[4],5,50);
+	cc.fillText("ay: " + ball[5],5,60);
+	for(x = 0; x < walls.length;x++){
+		cc.fillText(walls[x],walls[x] + 7,590);
+		cc.fillText(holes[x],walls[x] + 7,holes[x])
+	}
+}
+
+//Draw the current score as part of the HUD
+function drawScore(){
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("Score: " + score,5,10);
+}
+
+//Calculate a time display text using the value in the time variable and display it as part of the HUD
+function drawTime(){
+	min = Math.floor(time / 60);
+	sec = time - (min * 60);
+
+	if(min < 10){min = "0" + min}
+	if(sec < 10){sec = "0" + sec}
+
+	cc.fillStyle = "white";
+	cc.font = "10px sans-serif";
+	cc.fillText("Time: " + min + ":" + sec,5,20);
+}
+
+//Draw the ball at the current xy coordinates
+function drawBall(){
+	cc.fillStyle = "white";
+	cc.fillRect(ball[0] - 5,ball[1] - 5,10,10);
+}
+
+//Draw all of the walls using the coordinates specified in the array
+function drawWalls(){
+	for(x = 0;x < walls.length;x++){
+		drawWall(x);
+	}
+}
+
+//Draw a wall using the coordinate from the array element "x"
+function drawWall(x){
+	cc.fillStyle = "white";
+	cc.fillRect(walls[x],0,5,600);
+}
+
+//Draw all of the holes using the coordinates specified in the array
+function drawHoles(){
+	for(x = 0;x < holes.length;x++){
+		drawHole(x);
+	}
+}
+
+//Draw a hole using the coordinate from the array element "x"
+function drawHole(x){
+	cc.fillStyle = "black";
+	cc.fillRect(walls[x],holes[x],5,holeSize);
+}
+
+//Draw the gameover screen
+function gameOver(){
+	cc.fillStyle = "white";
+	cc.font = "40px sans-serif";
+	cc.fillText("Game Over",200,250);
+	cc.font = "20px sans-serif";
+	cc.fillText("Continue",260,350);
+}
+
+//Draw the mainMenu screen
+function mainMenu(){
+	cc.fillStyle = "white";
+	cc.font = "40px sans-serif";
+	cc.fillText("Almost Flappy-Bird",140,250);
+	cc.font = "20px sans-serif";
+	cc.fillText("Start",260,350);
+	if(mx >= 270 && mx <= 310){
+		if(my >= 340 && my <= 360){
+			main = false;
+		}
+	}
+}
+
+//Increment the time variable by one every 60 frames
+function checkTime(){
+	if(count == 60){
+		time++;
+		count = 0;
+		if(time % 30 == 0){
+			wallSpeed += 0.5;
+		}
+	}
+}
+
+//Reset all of the variables to the default value and reset the hole coordinates to random values
+function reset(){
+	walls = [600,750,900,1050];
+	holes = [600,600,600,600];
+	wallSpeed = 2;
+	score = 0;
+	ball = [300,300,0,0,0,0];
+	mx = 300
+	my = 300
+	lost = false;
+	count = 0;
+	time = 0;
+	setHoles();
+}
+
+//Change the coordinates of every wall in the array every frame
+function moveWalls() {
+	for(x = 0;x < walls.length;x++){ //loop through walls array
+		walls[x] -= wallSpeed;
+		if(walls[x] == 0){ //check if wall needs to be reset
+			walls[x] = 600;
+			setHole(x);
+		}
+	}
+}
+
+//Assgn a random value to a specified element in the array
+function setHole(x){
+	holey = Math.random();
+	holey = Math.floor(holey * 500);
+	holey = holey + 50;
+	holes[x] = holey
+}
+
+//Assign a random value to every element in the holes array
+function setHoles(){
+	for(x = 0; x < holes.length; x++){
+		setHole(x);
+	}
+}
+
+//Detect whether or not the ball has collided with any of the walls in the array
+function detectCollision(){
+	ballx = ball[0];
+	bally = ball[1]
+	for(x = 0;x < walls.length;x++){
+		if(ballx <= walls[x] + wallSpeed && ballx >= walls[x] - 5){
+			if(bally + 5  > holes[x] + holeSize || bally - 5  < holes[x]){
+				lost = true;
+
+			}
+			else{
+				score += 1
+			}
+		}
+	}
+}
+
+//Get the acceleration value for the ball based on its distance from the mouse
+function getAcceleration(){
+	ay = Math.floor((my - ball[1]) / 10);
+	ax = Math.floor((mx - ball[0]) / 10);
+	if(ay > 10) {
+		ay = 10;
+	}
+	if(ay < -10) {
+		ay = -10;
+	}
+	if(ax > 10){
+		ax = 10;
+	}
+	if(ax < -10) {
+		ax = -10;
+	}
+	ball[4] = ax;
+	ball[5] = ay;
+}
+
+//Change the ball's coordinates using its velocity values
+function applyVelocity(){
+	ballx = ball[0];
+	bally = ball[1];
+	if(ballx == 0 + 11 || ballx == 600 - 11){
+		ball[0] = 0;
+	}
+	if(bally == 0 + 11 || bally == 600 - 11){
+		ball[1] = 0;
+	}
+	else {
+		ball[0] = ballx + ball[2];
+		ball[1] = bally + ball[3];
+	}
+}
+
+//Change the ball's velocity using its acceleration values
+function applyAcceleration(){
+	ballax = ball[4];
+	ballay = ball[5];
+	ball[2] = ballax + ball[4];
+	ball[3] = ballay + ball[5];
+}
+
+//Toggle debug mode
+function toggleDebug(){
+	if(debug == true){
+		debug = false;
+	}
+	else{
+		debug = true;
+	}
+}
+		</pre>
+	</div>
+
+	<button type="button" title="Click to show/hide code" onclick="spoilerToggle('spoiler')">Show/Hide Code</button>
+
+	<br>
+	<a href="../work.html">Back</a>
+
+
+
+</body>
