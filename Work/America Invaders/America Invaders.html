@@ -1,0 +1,929 @@
+<canvas id = "canvas" width = "800" height = "480"></canvas>
+<script>
+
+c = document.getElementById("canvas");
+var width = document.getElementById("canvas").getAttribute("width");
+var height = document.getElementById("canvas").getAttribute("height");
+
+var my = 0;
+var state = 0; //0 = menu, 1 = playing, 2 = win, 3 = lose
+
+var playerx = 150;
+var shots = [[0,0],[0,0],[0,0],[0,0],[0,0]] //array to store 5 shots worth of data
+var loaded = 5;
+
+
+var enemies = [[true,true,true,true,true,true,true,true,true,true,true,true],
+							 [true,true,true,true,true,true,true,true,true,true,true,true],
+							 [true,true,true,true,true,true,true,true,true,true,true,true]]
+var enemiesx = 10;
+var enemiesy = 55;
+var enemyDir = 1;
+var enemySpeed = 2;
+
+var bossShield = true;
+var bossx = (enemies[0].length * 35) / 2;
+var bossy = 5;
+var bossHealth = 10;
+var bossShotSpeed = 4;
+var bossShots = [[0,0],[0,0],[0,0],[0,0],[0,0]];
+var bossShotImg = "bossShot1";
+var bossShotNum = 3;
+var bossShotFreq = 3;
+var bossShotOrder = [0,0,0,0,0];
+
+var score = 0;
+
+window.onload = function() {
+	cc = c.getContext("2d");
+	getShotOrder();
+	setInterval(update,1000/30);
+
+	c.addEventListener("mousemove",function(event){ //a function to get the mouse coordinates every time it moves
+		playerx = event.clientX;	// Get the player's x coordinate
+		if(state != 1) {my = event.clientY;}
+		if(playerx > width - 10){playerx = width - 25;}
+		if(playerx < 10){playerx = 10;}
+});
+
+	c.addEventListener("click",function(){
+		if(state == 1){
+			shoot();
+		}
+	});
+
+}
+
+function drawBackground(){
+	cc.fillStyle = "black";
+	cc.fillRect(0,0,width,height);
+}
+
+function drawMenu(){
+	cc.fillStyle = "white";
+	cc.font = "30px Arial";
+	cc.fillText("America Invaders",width/2 - 110,height/2 - 75);
+	cc.font = "25px Arial";
+	cc.fillText("Start",width/2 - 25,height/2 - 15);
+	cc.font = "15px Arial";
+	cc.fillText("You are the supreme leader of North Korea, the mighty Kim Jong Un",width/2 - 230,height/2 + 45);
+	cc.fillText("developing ballistic weapons for the defense of your glorious republic.",width/2 - 230,height/2 + 60);
+	cc.fillText("But suddenly you find that America, led by their new President Donald Trump is invading!",width/2 - 280,height/2 + 75);
+	cc.fillText("You must use your newly developed missiles to destroy his wealth, and take Donald Out directly.",width/2 - 300,height/2 + 90);
+	if(playerx > width/2 - 25 && playerx < width/2 + 40){
+		if(my > height/2 - 25 && my < height/2){
+			reset();
+			state = 1;
+		}
+	}
+}
+
+function drawLose(){
+	cc.fillStyle = "white";
+	cc.font = "30px Arial";
+	cc.fillText("You Lose",width/2 - 70,height/2 - 75);
+	cc.font = "25px Arial";
+	cc.fillText("Restart",width/2 - 49,height/2 - 15);
+	cc.font = "15px Arial";
+	cc.fillText("Despite all your efforts, Trump has invaded your country",width/2 - 180,height/2 + 45);
+	if(playerx > width/2 - 49 && playerx < width/2 + 45){
+		if(my > height/2 - 30 && my < height/2 - 5){
+			reset();
+			state = 0;
+		}
+	}
+}
+
+function drawWin(){
+	cc.fillStyle = "white";
+	cc.font = "30px Arial";
+	cc.fillText("You Win!",width/2 - 70,height/2 - 75);
+	cc.font = "25px Arial";
+	cc.fillText("Restart",width/2 - 49,height/2 - 15);
+	cc.font = "15px Arial";
+	cc.fillText("You have successfully defeated trump after his Ascension, North Korea is safe!",width/2 - 240,height/2 + 45);
+	if(playerx > width/2 - 49 && playerx < width/2 + 45){
+		if(my > height/2 - 30 && my < height/2 - 5){
+			reset();
+			state = 0;
+		}
+	}
+}
+
+function drawPlayer(){
+	playerImg = new Image();
+	playerImg.src = "Images/player.png";
+	cc.drawImage(playerImg,playerx,425);
+}
+
+function drawShot(shots,shot,img){
+	x = shots[shot][0];
+	y = shots[shot][1];
+	shotImg = new Image();
+	shotImg.src = "Images/" + img;
+	cc.drawImage(shotImg,x,y);
+}
+
+function drawShots(shots,img){
+	for(s = 0; s < shots.length; s++){
+		var shot = shots[s];
+		if(shot[1] != 0){
+			drawShot(shots,s,img);
+		}
+	}
+}
+
+function drawHUD(){
+	cc.fillStyle = "white";
+	cc.font = "15px Arial";
+	cc.fillText("Missiles Ready: ",5,height - 5);
+	drawLoadedShots();
+	if(loaded < 5){
+		cc.fillText("Reloading...",5,height - 20);
+	}
+}
+
+function drawLoadedShots(){
+	cc.fillStyle = "white";
+	for(x = 0;x < loaded;x++){
+		cc.fillRect(110 + (x * 15),465,11,11);
+	}
+}
+
+function drawScore(){
+	cc.fillStyle = "white";
+	cc.font = "15px Arial";
+	cc.fillText("Score: " + score,185, height - 5);
+}
+
+function drawEnemy(x,y){
+	enemyImg = new Image();
+	enemyImg.src = "Images/enemy.png";
+	cc.drawImage(enemyImg,x,y);
+}
+
+function drawEnemies(bx,by){
+	cc.fillStyle = "white";
+	for(y = 0;y < enemies.length;y++){
+		for(x = 0;x < enemies[0].length;x++){
+			//drawHitbox(x,y);
+			if(enemies[y][x] == true){
+				drawEnemy(bx + (x * 40),by + (y * 40));
+			}
+		}
+	}
+}
+
+function drawBoss(x,y){
+	bossImg = new Image();
+	if(bossShield == true){
+		bossImg.src = "Images/trump.png";
+	}
+	else {
+		bossImg.src = "Images/trumpAscended.png";
+	}
+	cc.drawImage(bossImg,x,y);
+}
+
+function drawHitbar(){
+	cc.fillStyle = "white";
+	cc.strokeStyle = "white";
+	cc.font = "16px Arial"
+	cc.fillText("Donald Trump (Ascended):",width / 2 - 50,20);
+	cc.strokeRect(width/2 - 100,25,300,30);
+	cc.fillRect(width/2 - 95,30,290 * (bossHealth / 10),20);
+}
+
+function drawHitbox(x,y){
+	cc.fillStyle = "blue";
+	cc.fillRect(enemiesx + (x * 40), enemiesy + (y * 40),30,30);
+}
+
+function enemiesDown(){
+	b = false;
+	for(y = 0;y < enemies.length;y++){
+		for(x = 0;x < enemies[0].length;x++){
+			if(enemies[y][x] == true){
+				b = true;
+			}
+		}
+	}
+
+	if(b == false){
+		enemySpeed = 4;
+		bossShield = false;
+		bossShotFreq = 5;
+		bossShotSpeed = 8;
+	}
+
+}
+
+function freeShots(shots){ //look through the shots array to see if any shots are free
+	for(x = 0; x < shots.length; x++){
+		if(shots[x][1] == 0){
+			return x
+			break;
+		}
+		else if(x == 4){
+			return false;
+		}
+	}
+}
+
+function bossShoot(){
+	var free = freeShots(bossShots);
+	if(free != Boolean) {
+		bossShots[free][0] = bossx + 8;
+		bossShots[free][1] = bossy + 40;
+		randomShotImg();
+	}
+}
+
+function shoot(){
+	var free = freeShots(shots);
+	if(free != Boolean) {
+		shots[free][0] = playerx + 8;
+		shots[free][1] = 420;
+	}
+}
+
+function getShotOrder(){
+	for(x = 0;x < bossShotFreq;x++){
+		if(bossShield == false){
+			bossShotOrder[x] = Math.floor(Math.random() * (width - 200))
+		}
+		else{
+			bossShotOrder[x] = 200 + Math.floor(Math.random() * (width - 500))
+		}
+	}
+}
+
+function checkShouldShoot(){
+	for(x = 0;x < bossShotFreq;x++){
+		if(bossx > bossShotOrder[x] && bossx < bossShotOrder[x] + 3){
+			bossShoot();
+		}
+	}
+}
+
+function randomShotImg(){
+	x = Math.floor(bossShotNum * Math.random());
+	bossShotImg = "bossShot" + x + ".png";
+}
+
+function detectCollision(){
+	for(x = 0;x < 5;x++){
+		if(shots[x][1] < 4){
+			shots[x] = [0,0];
+		}
+		if(bossShots[x][1] > height - 4){
+			bossShots[x] = [0,0];
+		}
+	}
+
+
+
+	for(y = 0;y < 3;y++){
+		for(x = 0;x < 12;x++){
+
+			if(enemies[y][x] == true){
+					if(425 < enemiesy + (y * 40)){
+						state = 4;
+				}
+			}
+
+
+			for(s = 0;s < 5;s++){
+
+				if(bossShield == false){
+					if(shots[s][0] > bossx && shots[s][0] < bossx + 40){
+						if(shots[s][1] > bossy && shots[s][1] < bossy + 40){
+								bossHealth--;
+								shots[s] = [0,0]
+
+						}
+					}
+				}
+					if(enemies[y][x] == true){
+					if(shots[s][0] > enemiesx + (x * 40) && shots[s][0] < enemiesx + (x + 1) * 40){
+						if(shots[s][1] > enemiesy + (y * 40) && shots[s][1] < enemiesy + (y + 1) * 40){
+							enemies[y][x] = false;
+							shots[s] = [0,0]
+							score += 10;
+						}
+					}
+				}
+
+				if(bossShots[s][1] > 425){
+					if((bossShots[s][0] > playerx || bossShots[s][0] + 24 > playerx) && (bossShots[s][0] < playerx + 24 || bossShots[s][0] + 24 < playerx + 24)){
+						state = 4;
+					}
+				}
+
+			}
+
+		}
+	}
+}
+
+function checkHealth(){
+	if(bossHealth == 0){
+		state = 3;
+	}
+}
+
+function getLoaded(){
+	loaded = 0;
+	for(x = 0;x < 5;x++){
+		if(shots[x][0] == 0 && shots[x][1] == 0){
+			loaded++
+		}
+	}
+}
+
+function moveShots(){
+	for(s = 0;s < shots.length;s++){
+		if(shots[s][1] != 0){
+			shots[s][1] -= 4;
+		}
+		if(bossShots[s][0] != 0){
+			bossShots[s][1] += bossShotSpeed;
+		}
+	}
+}
+
+function moveEnemies(){
+	enemiesx += enemySpeed * enemyDir;
+	bossx += enemySpeed * enemyDir;
+	if(enemiesx + 470 > width - 10 || enemiesx < 10){
+		enemiesy += 5;
+		bossy += 5;
+		enemyDir *= -1;
+		getShotOrder();
+	}
+}
+
+function moveBoss(){
+	bossx += enemySpeed * enemyDir;
+	boundL = Math.floor(100 * Math.random());
+	boundR = width - 100 + Math.floor(100 * Math.random());
+
+	if(boundL > bossx){
+		boundL = Math.floor(bossx * Math.random());
+	}
+
+	if(boundR < bossx + 40){
+		boundR = Math.floor((bossx + 40) * Math.random());
+	}
+
+	if(bossx + 40 > boundR || bossx < boundL){
+			bossy += 20;
+			enemyDir *= -1;
+			getShotOrder();
+	}
+}
+
+function nuke(){
+	enemies = [[false,false,false,false,false,false,false,false,false,false,false,false],
+	   				 [false,false,false,false,false,false,false,false,false,false,false,false],
+						 [false,false,false,false,false,false,false,false,false,false,false,false]];
+						 alert("THAT'S BULLSHIT!!!!!");
+}
+
+function reset(){
+	playerx = 150;
+	shots = [[0,0],[0,0],[0,0],[0,0],[0,0]] //array to store 5 shots worth of data
+	loaded = 20;
+
+	enemies = [[true,true,true,true,true,true,true,true,true,true,true,true],
+								 [true,true,true,true,true,true,true,true,true,true,true,true],
+								 [true,true,true,true,true,true,true,true,true,true,true,true]]
+	enemiesx = 10;
+	enemiesy = 55;
+	enemyDir = 1;
+	enemySpeed = 2;
+
+	bossShield = true;
+	bossx = (enemies[0].length * 35) / 2;
+	bossy = 5;
+	bossHealth = 10;
+
+	score = 0;
+}
+
+function update(){
+	drawBackground();
+	if(state == 0){ //menu screen
+		drawMenu();
+	}
+	else if(state == 1){ //Play screen
+		drawPlayer();
+		drawHUD();
+		drawScore();
+		drawShots(shots,"missile.png");
+		drawShots(bossShots,bossShotImg)
+		drawBoss(bossx,bossy);
+
+		enemiesDown();
+		if(bossShield == false){
+			drawHitbar();
+
+			moveBoss();
+			checkHealth();
+		}
+		else{
+			drawEnemies(enemiesx,enemiesy);
+
+			moveEnemies();
+		}
+
+		checkShouldShoot()
+		detectCollision();
+		getLoaded();
+		moveShots();
+	}
+	else if(state == 3){ //Win screen
+		drawWin();
+	}
+	else if(state == 4){ //Lose screen
+		drawLose();
+	}
+
+}
+
+function test(){
+	console.log("test");
+}
+
+</script>
+
+<body>
+	<br>
+	<script src="../Javascript/javascript.js"></script>
+
+	<div id="spoiler" style="display:none">
+		<pre>
+			c = document.getElementById("canvas");
+			var width = document.getElementById("canvas").getAttribute("width");
+			var height = document.getElementById("canvas").getAttribute("height");
+
+			var my = 0;
+			var state = 0; //0 = menu, 1 = playing, 2 = win, 3 = lose
+
+			var playerx = 150;
+			var shots = [[0,0],[0,0],[0,0],[0,0],[0,0]] //array to store 5 shots worth of data
+			var loaded = 5;
+
+
+			var enemies = [[true,true,true,true,true,true,true,true,true,true,true,true],
+										 [true,true,true,true,true,true,true,true,true,true,true,true],
+										 [true,true,true,true,true,true,true,true,true,true,true,true]]
+			var enemiesx = 10;
+			var enemiesy = 55;
+			var enemyDir = 1;
+			var enemySpeed = 2;
+
+			var bossShield = true;
+			var bossx = (enemies[0].length * 35) / 2;
+			var bossy = 5;
+			var bossHealth = 10;
+			var bossShotSpeed = 4;
+			var bossShots = [[0,0],[0,0],[0,0],[0,0],[0,0]];
+			var bossShotImg = "bossShot1";
+			var bossShotNum = 3;
+			var bossShotFreq = 3;
+			var bossShotOrder = [0,0,0,0,0];
+
+			var score = 0;
+
+			window.onload = function() {
+				cc = c.getContext("2d");
+				getShotOrder();
+				setInterval(update,1000/30);
+
+				c.addEventListener("mousemove",function(event){ //a function to get the mouse coordinates every time it moves
+					playerx = event.clientX;	// Get the player's x coordinate
+					if(state != 1) {my = event.clientY;}
+					if(playerx > width - 10){playerx = width - 25;}
+					if(playerx < 10){playerx = 10;}
+			});
+
+				c.addEventListener("click",function(){
+					if(state == 1){
+						shoot();
+					}
+				});
+
+			}
+
+			function drawBackground(){
+				cc.fillStyle = "black";
+				cc.fillRect(0,0,width,height);
+			}
+
+			function drawMenu(){
+				cc.fillStyle = "white";
+				cc.font = "30px Arial";
+				cc.fillText("America Invaders",width/2 - 110,height/2 - 75);
+				cc.font = "25px Arial";
+				cc.fillText("Start",width/2 - 25,height/2 - 15);
+				cc.font = "15px Arial";
+				cc.fillText("You are the supreme leader of North Korea, the mighty Kim Jong Un",width/2 - 230,height/2 + 45);
+				cc.fillText("developing ballistic weapons for the defense of your glorious republic.",width/2 - 230,height/2 + 60);
+				cc.fillText("But suddenly you find that America, led by their new President Donald Trump is invading!",width/2 - 280,height/2 + 75);
+				cc.fillText("You must use your newly developed missiles to destroy his wealth, and take Donald Out directly.",width/2 - 300,height/2 + 90);
+				if(playerx > width/2 - 25 && playerx < width/2 + 40){
+					if(my > height/2 - 25 && my < height/2){
+						reset();
+						state = 1;
+					}
+				}
+			}
+
+			function drawLose(){
+				cc.fillStyle = "white";
+				cc.font = "30px Arial";
+				cc.fillText("You Lose",width/2 - 70,height/2 - 75);
+				cc.font = "25px Arial";
+				cc.fillText("Restart",width/2 - 49,height/2 - 15);
+				cc.font = "15px Arial";
+				cc.fillText("Despite all your efforts, Trump has invaded your country",width/2 - 180,height/2 + 45);
+				if(playerx > width/2 - 49 && playerx < width/2 + 45){
+					if(my > height/2 - 30 && my < height/2 - 5){
+						reset();
+						state = 0;
+					}
+				}
+			}
+
+			function drawWin(){
+				cc.fillStyle = "white";
+				cc.font = "30px Arial";
+				cc.fillText("You Win!",width/2 - 70,height/2 - 75);
+				cc.font = "25px Arial";
+				cc.fillText("Restart",width/2 - 49,height/2 - 15);
+				cc.font = "15px Arial";
+				cc.fillText("You have successfully defeated trump after his Ascension, North Korea is safe!",width/2 - 240,height/2 + 45);
+				if(playerx > width/2 - 49 && playerx < width/2 + 45){
+					if(my > height/2 - 30 && my < height/2 - 5){
+						reset();
+						state = 0;
+					}
+				}
+			}
+
+			function drawPlayer(){
+				playerImg = new Image();
+				playerImg.src = "Images/player.png";
+				cc.drawImage(playerImg,playerx,425);
+			}
+
+			function drawShot(shots,shot,img){
+				x = shots[shot][0];
+				y = shots[shot][1];
+				shotImg = new Image();
+				shotImg.src = "Images/" + img;
+				cc.drawImage(shotImg,x,y);
+			}
+
+			function drawShots(shots,img){
+				for(s = 0; s < shots.length; s++){
+					var shot = shots[s];
+					if(shot[1] != 0){
+						drawShot(shots,s,img);
+					}
+				}
+			}
+
+			function drawHUD(){
+				cc.fillStyle = "white";
+				cc.font = "15px Arial";
+				cc.fillText("Missiles Ready: ",5,height - 5);
+				drawLoadedShots();
+				if(loaded < 5){
+					cc.fillText("Reloading...",5,height - 20);
+				}
+			}
+
+			function drawLoadedShots(){
+				cc.fillStyle = "white";
+				for(x = 0;x < loaded;x++){
+					cc.fillRect(110 + (x * 15),465,11,11);
+				}
+			}
+
+			function drawScore(){
+				cc.fillStyle = "white";
+				cc.font = "15px Arial";
+				cc.fillText("Score: " + score,185, height - 5);
+			}
+
+			function drawEnemy(x,y){
+				enemyImg = new Image();
+				enemyImg.src = "Images/enemy.png";
+				cc.drawImage(enemyImg,x,y);
+			}
+
+			function drawEnemies(bx,by){
+				cc.fillStyle = "white";
+				for(y = 0;y < enemies.length;y++){
+					for(x = 0;x < enemies[0].length;x++){
+						//drawHitbox(x,y);
+						if(enemies[y][x] == true){
+							drawEnemy(bx + (x * 40),by + (y * 40));
+						}
+					}
+				}
+			}
+
+			function drawBoss(x,y){
+				bossImg = new Image();
+				if(bossShield == true){
+					bossImg.src = "Images/trump.png";
+				}
+				else {
+					bossImg.src = "Images/trumpAscended.png";
+				}
+				cc.drawImage(bossImg,x,y);
+			}
+
+			function drawHitbar(){
+				cc.fillStyle = "white";
+				cc.strokeStyle = "white";
+				cc.font = "16px Arial"
+				cc.fillText("Donald Trump (Ascended):",width / 2 - 50,20);
+				cc.strokeRect(width/2 - 100,25,300,30);
+				cc.fillRect(width/2 - 95,30,290 * (bossHealth / 10),20);
+			}
+
+			function drawHitbox(x,y){
+				cc.fillStyle = "blue";
+				cc.fillRect(enemiesx + (x * 40), enemiesy + (y * 40),30,30);
+			}
+
+			function enemiesDown(){
+				b = false;
+				for(y = 0;y < enemies.length;y++){
+					for(x = 0;x < enemies[0].length;x++){
+						if(enemies[y][x] == true){
+							b = true;
+						}
+					}
+				}
+
+				if(b == false){
+					enemySpeed = 4;
+					bossShield = false;
+					bossShotFreq = 5;
+					bossShotSpeed = 8;
+				}
+
+			}
+
+			function freeShots(shots){ //look through the shots array to see if any shots are free
+				for(x = 0; x < shots.length; x++){
+					if(shots[x][1] == 0){
+						return x
+						break;
+					}
+					else if(x == 4){
+						return false;
+					}
+				}
+			}
+
+			function bossShoot(){
+				var free = freeShots(bossShots);
+				if(free != Boolean) {
+					bossShots[free][0] = bossx + 8;
+					bossShots[free][1] = bossy + 40;
+					randomShotImg();
+				}
+			}
+
+			function shoot(){
+				var free = freeShots(shots);
+				if(free != Boolean) {
+					shots[free][0] = playerx + 8;
+					shots[free][1] = 420;
+				}
+			}
+
+			function getShotOrder(){
+				for(x = 0;x < bossShotFreq;x++){
+					if(bossShield == false){
+						bossShotOrder[x] = Math.floor(Math.random() * (width - 200))
+					}
+					else{
+						bossShotOrder[x] = 200 + Math.floor(Math.random() * (width - 500))
+					}
+				}
+			}
+
+			function checkShouldShoot(){
+				for(x = 0;x < bossShotFreq;x++){
+					if(bossx > bossShotOrder[x] && bossx < bossShotOrder[x] + 3){
+						bossShoot();
+					}
+				}
+			}
+
+			function randomShotImg(){
+				x = Math.floor(bossShotNum * Math.random());
+				bossShotImg = "bossShot" + x + ".png";
+			}
+
+			function detectCollision(){
+				for(x = 0;x < 5;x++){
+					if(shots[x][1] < 4){
+						shots[x] = [0,0];
+					}
+					if(bossShots[x][1] > height - 4){
+						bossShots[x] = [0,0];
+					}
+				}
+
+
+
+				for(y = 0;y < 3;y++){
+					for(x = 0;x < 12;x++){
+
+						if(enemies[y][x] == true){
+								if(425 < enemiesy + (y * 40)){
+									state = 4;
+							}
+						}
+
+
+						for(s = 0;s < 5;s++){
+
+							if(bossShield == false){
+								if(shots[s][0] > bossx && shots[s][0] < bossx + 40){
+									if(shots[s][1] > bossy && shots[s][1] < bossy + 40){
+											bossHealth--;
+											shots[s] = [0,0]
+
+									}
+								}
+							}
+								if(enemies[y][x] == true){
+								if(shots[s][0] > enemiesx + (x * 40) && shots[s][0] < enemiesx + (x + 1) * 40){
+									if(shots[s][1] > enemiesy + (y * 40) && shots[s][1] < enemiesy + (y + 1) * 40){
+										enemies[y][x] = false;
+										shots[s] = [0,0]
+										score += 10;
+									}
+								}
+							}
+
+							if(bossShots[s][1] > 425){
+								if((bossShots[s][0] > playerx || bossShots[s][0] + 24 > playerx) && (bossShots[s][0] < playerx + 24 || bossShots[s][0] + 24 < playerx + 24)){
+									state = 4;
+								}
+							}
+
+						}
+
+					}
+				}
+			}
+
+			function checkHealth(){
+				if(bossHealth == 0){
+					state = 3;
+				}
+			}
+
+			function getLoaded(){
+				loaded = 0;
+				for(x = 0;x < 5;x++){
+					if(shots[x][0] == 0 && shots[x][1] == 0){
+						loaded++
+					}
+				}
+			}
+
+			function moveShots(){
+				for(s = 0;s < shots.length;s++){
+					if(shots[s][1] != 0){
+						shots[s][1] -= 4;
+					}
+					if(bossShots[s][0] != 0){
+						bossShots[s][1] += bossShotSpeed;
+					}
+				}
+			}
+
+			function moveEnemies(){
+				enemiesx += enemySpeed * enemyDir;
+				bossx += enemySpeed * enemyDir;
+				if(enemiesx + 470 > width - 10 || enemiesx < 10){
+					enemiesy += 5;
+					bossy += 5;
+					enemyDir *= -1;
+					getShotOrder();
+				}
+			}
+
+			function moveBoss(){
+				bossx += enemySpeed * enemyDir;
+				boundL = Math.floor(100 * Math.random());
+				boundR = width - 100 + Math.floor(100 * Math.random());
+
+				if(boundL > bossx){
+					boundL = Math.floor(bossx * Math.random());
+				}
+
+				if(boundR < bossx + 40){
+					boundR = Math.floor((bossx + 40) * Math.random());
+				}
+
+				if(bossx + 40 > boundR || bossx < boundL){
+						bossy += 20;
+						enemyDir *= -1;
+						getShotOrder();
+				}
+			}
+
+			function nuke(){
+				enemies = [[false,false,false,false,false,false,false,false,false,false,false,false],
+				   				 [false,false,false,false,false,false,false,false,false,false,false,false],
+									 [false,false,false,false,false,false,false,false,false,false,false,false]];
+									 alert("THAT'S BULLSHIT!!!!!");
+			}
+
+			function reset(){
+				playerx = 150;
+				shots = [[0,0],[0,0],[0,0],[0,0],[0,0]] //array to store 5 shots worth of data
+				loaded = 20;
+
+				enemies = [[true,true,true,true,true,true,true,true,true,true,true,true],
+											 [true,true,true,true,true,true,true,true,true,true,true,true],
+											 [true,true,true,true,true,true,true,true,true,true,true,true]]
+				enemiesx = 10;
+				enemiesy = 55;
+				enemyDir = 1;
+				enemySpeed = 2;
+
+				bossShield = true;
+				bossx = (enemies[0].length * 35) / 2;
+				bossy = 5;
+				bossHealth = 10;
+
+				score = 0;
+			}
+
+			function update(){
+				drawBackground();
+				if(state == 0){ //menu screen
+					drawMenu();
+				}
+				else if(state == 1){ //Play screen
+					drawPlayer();
+					drawHUD();
+					drawScore();
+					drawShots(shots,"missile.png");
+					drawShots(bossShots,bossShotImg)
+					drawBoss(bossx,bossy);
+
+					enemiesDown();
+					if(bossShield == false){
+						drawHitbar();
+
+						moveBoss();
+						checkHealth();
+					}
+					else{
+						drawEnemies(enemiesx,enemiesy);
+
+						moveEnemies();
+					}
+
+					checkShouldShoot()
+					detectCollision();
+					getLoaded();
+					moveShots();
+				}
+				else if(state == 3){ //Win screen
+					drawWin();
+				}
+				else if(state == 4){ //Lose screen
+					drawLose();
+				}
+
+			}
+
+			function test(){
+				console.log("test");
+			}
+
+			</sc
+		</pre>
+	</div>
+
+	<button type="button" title="Click to show/hide code" onclick="spoilerToggle('spoiler')">Show/Hide Code</button>
+
+	<br>
+	<a href="../../work.html">Back</a>
+
+</body>
