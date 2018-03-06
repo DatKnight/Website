@@ -118,8 +118,8 @@ function Player(){
 	this.yAccel = 0;
 
 	//Player's terminal velocities on each axis
-	this.xTerm = 10;
-	this.yTerm = 10;
+	this.xTerm = 20;
+	this.yTerm = 20;
 
 	//Stored velocities on the x and y axis
 	this.xStored = 0;
@@ -347,6 +347,9 @@ function Physics($canvasWidth, $canvasHeight){
 
 /**=========================================================================================================================**/
 
+//BOX
+//Simple physics object
+
 function box(){
 
 	this.x = null;
@@ -355,6 +358,8 @@ function box(){
 	this.size = null;
 
 	this.mass = null;
+
+
 
 }
 
