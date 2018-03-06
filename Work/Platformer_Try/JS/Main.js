@@ -1,4 +1,5 @@
 var fps = 30;
+var phys = 30;
 var $gravity = 1;
 var $friction = 1;
 
@@ -98,13 +99,15 @@ function Player(){
 
 	let player = this;
 
+	//--------Physics Properties----------//
+
 	//Player's coordinates
 	this.x = 300;
 	this.y = 300;
 
 	//Player's dimensions
-	this.height = 10;
 	this.width = 10;
+	this.height = 10;
 
 	//Player's velocity on the x-axis and y-axis
 	this.xVelocity = 0;
@@ -118,6 +121,12 @@ function Player(){
 	this.xTerm = 10;
 	this.yTerm = 10;
 
+	//Stored velocities on the x and y axis
+	this.xStored = 0;
+	this.yStored = 0;
+
+	//-------------Flags---------------//
+
 	//Track when player is touching the ground or a wall
 	this.touchGround = null;
 	this.touchWall = null;
@@ -125,6 +134,34 @@ function Player(){
 	//Track when player is moving left or right
 	this.movingLeft = false;
 	this.movingRight = false;
+
+	//------Setters and Getters------//
+
+	//Setters and getters for flags
+	this.setFlags = function(){}
+	this.getFlags = function(){}
+
+	//Setters and getters for velocity
+	this.setVelocity = function(){}
+	this.getVelocity = function(){}
+
+	//Setters and getters for acceleration
+	this.setAccel = function(){}
+	this.getAccel = function(){}
+
+	//Setters and getters for coordinates
+	this.setPosition = function(){}
+	this.getPosition = function(){}
+
+	//Setters and getters for dimensions
+	this.setDimensions = function(){}
+	this.getDimensions = function(){}
+
+	//Setters and getters for terminal velocities
+	this.setTerm = function(){}
+	this.getTerm = function(){}
+
+	//-----------Methods------------//
 
 	//Set acceleration flag to start moving left
 	this.moveLeft = function(){
@@ -151,9 +188,27 @@ function Player(){
 		player.yVelocity = -15;
 	}
 
-	this.stop = function(){
-		player.xVelocity = 0;
-		player.xAccel = 0;
+	//Check if player has momentum stored and if so
+	//release it, otherwise store it
+	this.momentum = function(){
+		if(player.xStored == 0 && player.yStored == 0){
+			player.storeMomentum();
+		}
+		else{
+			player.releaseMomentum();
+		}
+	}
+
+	this.storeMomentum = function(){
+		player.xStored = player.xVelocity;
+		player.yStored = player.yVelocity;
+		player.xVelocity = player.yVelocity = 0;
+	}
+
+	this.releaseMomentum = function(){
+		player.xVelocity = player.xStored;
+		player.yVelocity = player.yStored;
+		player.xStored = player.yStored = 0;
 	}
 
 	//Get image for player
@@ -237,6 +292,27 @@ function Physics($canvasWidth, $canvasHeight){
 			}
 		}
 
+		//Check if player has collided with a wall
+		//If so, stop them and apply counterforce
+		if(self.player.x > $canvasWidth - 10 || self.player.x < 10){
+			self.player.touchWall = true;
+			self.player.xVelocity = 0;
+			if(self.player.x > $canvasWidth - 10 && self.player.xAccel > 0){
+				self.player.xAccel = 0;
+				self.player.yVelocity = 1
+			}
+			else if(self.player.x < 10 && self.player.xAccel < 0){
+				self.player.xAccel = 0;
+				self.player.yVelocity = 1;
+			}
+		}
+
+		//Check if player is touching wall and moving
+		//towards it at the same time. If so apply wall friction
+		if(self.player.touchWall == true){
+
+		}
+
 		//Apply acceleration and velocity calculations to player
 		self.player.xVelocity += self.player.xAccel;
 		self.player.x += self.player.xVelocity;
@@ -262,11 +338,24 @@ function Physics($canvasWidth, $canvasHeight){
 
 
 		//Wait until next frame and call this function again
-		setTimeout(function () {self.engineLoop();}, 1000/fps);
+		setTimeout(function () {self.engineLoop();}, 1000/phys);
 	}
 
 
 	return self;
+}
+
+/**=========================================================================================================================**/
+
+function box(){
+
+	this.x = null;
+	this.y = null;
+
+	this.size = null;
+
+	this.mass = null;
+
 }
 
 /**=========================================================================================================================**/
@@ -312,7 +401,7 @@ function inputHandler(){
 			self.player.jump();
 		}
 		else if (input == 40) {
-			self.player.stop();
+			self.player.momentum();
 		}
 	}
 
