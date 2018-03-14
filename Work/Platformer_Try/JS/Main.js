@@ -29,6 +29,17 @@ function Main($canvasId){
 	this.getCanvasId = function() {return this.canvasId;}
 	this.setCanvasId = function($object) {this.canvasId = $object;}
 
+	//Create an object to hold the background Image
+	this.background = new Image();
+	this.background.src = 'Images/background_sky_cloudless.png'
+
+	//Create an object to hold the platform image
+	this.platform = new Image();
+	this.platform.src = 'Images/background.png'
+
+	//Create a new cloudController
+	this.cloudController = new CloudController(this.canvasY);
+
 	//Create a new player object within the main
 	this.player = new Player();
 
@@ -40,6 +51,11 @@ function Main($canvasId){
 	this.physics = new Physics(this.canvas.width,this.canvas.height);
 	this.physics.setPlayer(this.player);
 
+
+
+	//Initialize clouds
+	this.cloudController.initClouds(this.canvasX);
+
 	//Forces a reDraw on the object and all
 	//dependant objects below it, thus redrawing
 	//the whole screen
@@ -50,7 +66,16 @@ function Main($canvasId){
 
 		//Draw the background colour
 		$canvasContext.fillStyle = "black";
-		$canvasContext.fillRect(0, 0, this.canvasX, this.canvasY);
+		//$canvasContext.fillRect(0, 0, this.canvasX, this.canvasY);
+
+		//Draw background image
+		$canvasContext.drawImage(main.background,0,0);
+
+		//Draw clouds
+		main.cloudController.reDraw($canvasContext);
+
+		//Draw platform
+		$canvasContext.drawImage(main.platform,0,0);
 
 		//Draw player
 		this.player.reDraw($canvasContext);
@@ -86,6 +111,146 @@ function Main($canvasId){
 
 	}
 	return main;
+}
+
+/**=========================================================================================================================**/
+
+/**
+*CLOUD CONTROLLER
+*Controller for all clouds being drawn in the background
+*Assigns each cloud their row number and cascades draw commands to each one
+**/
+
+function CloudController(){
+
+	let controller = this;
+
+	//Array of all clouds present on the screen
+	this.clouds = [];
+
+	//List of all rows that are free
+	this.rows = [0,1,2,3,4,5,6];
+
+	//Add a new cloud to the array
+	this.addCloud = function($cloud){
+		controller.clouds.push($cloud);
+		$cloud.setController(controller);
+	}
+
+	//Function to assign a new row to a cloud
+	this.assignRow = function($cloud){
+		$cloud.setRow(controller.rows.pop());
+	}
+
+	//Function to reassign a new row to a cloud
+	this.reassignRow = function($cloud){
+		controller.rows.unshift($cloud.row);
+		$cloud.setRow(controller.rows.pop());
+		$cloud.setX(600);
+	}
+
+	//Function to "deactivate" a cloud
+	this.deactivate = function($cloud){
+		row = $cloud.getRow();
+		$cloud.setX(9999999);
+		controller.rows.push(row);
+	}
+
+	//Initialize clouds
+	this.initClouds = function($canvasWidth){
+
+		//Create cloud objects and assign them to the cloudController
+		let x = null;
+		for(var i = 0; i < 6; i++){
+			controller.clouds[i] = new Cloud();
+			controller.clouds[i].setImg('Images/cloud' + i + '.png')
+			controller.clouds[i].cloudController = controller;
+			x = Math.floor(Math.random() * $canvasWidth);
+			controller.clouds[i].setX(x);
+			controller.assignRow(controller.clouds[i]);
+		}
+	}
+
+	//Force a redraw of all
+	this.reDraw = function($canvasContext){
+		for(var i = 0; i < controller.clouds.length; i++){
+			controller.clouds[i].reDraw($canvasContext);
+			controller.clouds[i].move();
+			controller.clouds[i].offScreen();
+		}
+	}
+
+	return controller;
+
+}
+
+/**=========================================================================================================================**/
+
+/**
+*CLOUD
+*Object that represents a cloud in the background
+*Travels across screen at a random height until it reaches other side
+**/
+
+function Cloud($img){
+
+	let cloud = this;
+
+	//Image data for cloud
+	this.img = new Image();
+
+	//Width of cloud
+	this.width = this.img.Width;
+
+	//Y coordinate of cloud
+	this.row = null;
+
+	//X coordinate of cloud
+	this.x = null;
+
+	//External reference to cloudController object
+	this.cloudController = null;
+
+	//Move across the screen
+	this.move = function(){
+		this.x -= 0.5;
+	}
+
+	//Check if cloud has reached end of screen, if so request new row from controller
+	this.offScreen = function(){
+		if(cloud.x + cloud.img.width < 10){
+			cloud.cloudController.reassignRow(cloud);
+		}
+	}
+
+	//Method to get height of cloud for controller calculations
+	this.getHeight = function(){
+		return cloud.img.height;
+	}
+
+	//Set image source of individual cloud object
+	this.setImg = function($path){cloud.img.src = $path;}
+
+	//Set and get row for cloud
+	this.setRow = function($val){cloud.row = $val;}
+	this.getRow = function(){return cloud.row;}
+
+	//Setter for X coordinate
+	this.setX = function($val){cloud.x = $val;}
+
+	//Create reference to cloud controller
+	this.setController = function($controller){cloud.cloudController = $controller;}
+
+	//Draw cloud at specified row
+	this.reDraw = function($canvasContext){
+		//console.log(cloud.row);
+		$canvasContext.drawImage(cloud.img,cloud.x,cloud.row * 60 + 10);
+		//console.log(cloud.x + " " + cloud.row)
+		//console.log(cloud.img.src);
+	}
+
+	return cloud;
+
 }
 
 /**=========================================================================================================================**/
@@ -275,7 +440,7 @@ function Physics($canvasWidth, $canvasHeight){
 
 		//Check if player has collided with the ground
 		//If so, provide ground acceleration and set velocity to 0
-		if((self.player.y + self.player.height) > $canvasHeight - 5){
+		if((self.player.y + self.player.height) > $canvasHeight - 25){
 			self.player.yAccel += -$gravity;
 			if(self.player.yVelocity > 0){self.player.yVelocity = 0;}
 			self.player.touchGround = true;
@@ -294,14 +459,14 @@ function Physics($canvasWidth, $canvasHeight){
 
 		//Check if player has collided with a wall
 		//If so, stop them and apply counterforce
-		if(self.player.x > $canvasWidth - 10 || self.player.x < 10){
+		if(self.player.x > $canvasWidth - 40 || self.player.x < 40){
 			self.player.touchWall = true;
 			self.player.xVelocity = 0;
-			if(self.player.x > $canvasWidth - 10 && self.player.xAccel > 0){
+			if(self.player.x > $canvasWidth - 40 && self.player.xAccel > 0){
 				self.player.xAccel = 0;
 				self.player.yVelocity = 1
 			}
-			else if(self.player.x < 10 && self.player.xAccel < 0){
+			else if(self.player.x < 40 && self.player.xAccel < 0){
 				self.player.xAccel = 0;
 				self.player.yVelocity = 1;
 			}
