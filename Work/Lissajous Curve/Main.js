@@ -33,6 +33,10 @@ function Main($canvasId){
 	this.sine1 = new Sine();
 	this.sine2 = new Sine();
 
+	//Create two new sliders within main
+	this.slider1 = new Slider();
+	this.slider2 = new Slider();
+
 	//Create a lissajous curve
 	this.lissajous = new Lissajous();
 
@@ -40,6 +44,8 @@ function Main($canvasId){
 	this.inputHandler = new inputHandler();
 	this.inputHandler.setSine1(this.sine1);
 	this.inputHandler.setSine2(this.sine2);
+	this.inputHandler.setSlider1(this.slider1);
+	this.inputHandler.setSlider2(this.slider2);
 	this.inputHandler.setLissajous(this.lissajous);
 	this.inputHandler.setContext(this.canvasContext);
 
@@ -108,11 +114,19 @@ function Main($canvasId){
 		main.lissajous.setSine2(main.sine2);
 		main.lissajous.calcWaves();
 
+		//Place sliders
+		main.slider1.setX(20);
+		main.slider1.setY(300);
+		main.slider2.setX(310);
+		main.slider2.setY(300);
+
 		//Draw the initial frame
 		main.drawBack();
-		main.sine1.reDraw(this.canvasContext);
-		main.sine2.reDraw(this.canvasContext);
-		main.lissajous.reDraw(this.canvasContext);
+		main.sine1.reDraw(main.canvasContext);
+		main.sine2.reDraw(main.canvasContext);
+		main.lissajous.reDraw(main.canvasContext);
+		main.slider1.reDraw(main.canvasContext);
+		main.slider2.reDraw(main.canvasContext);
 
 		//Start drawing everything on screen
 		//main.reDraw();
@@ -144,6 +158,11 @@ function inputHandler(){
 	this.sine1 = null;
 	this.sine2 = null;
 
+	//Create a reference for sliders so input
+	//be detected
+	this.slider1 = null;
+	this.slider2 = null;
+
 	//Create a reference for the lissajous
 	//curve so that it can be updated
 	this.lissajous = null;
@@ -154,22 +173,19 @@ function inputHandler(){
 	//Flag to track when the mouse is held down
 	this.mDown = false;
 
-	//Variables to track the position the mouse
-	//was in when the mouse button is pressed
-	this.ox = null;
-	this.oy = null;
-
 	//Getters and setters
 	this.getDraw = function(){return self.drawing;}
 	this.setSine1 = function($val){self.sine1 = $val;}
 	this.setSine2 = function($val){self.sine2 = $val;}
 	this.setLissajous = function($val){self.lissajous = $val;}
 	this.setContext = function($val){self.canvasContext = $val;}
+	this.setSlider1 = function($val){self.slider1 = $val;}
+	this.setSlider2 = function($val){self.slider2 = $val;}
 
   //Detect if user is giving active input
 	this.mouseDown = function(){
 		self.mDown = true;
-		self.ox = self.mx
+		self.checkSlider();
 	}
 
 	//Detect if user stops giving active input
@@ -183,6 +199,7 @@ function inputHandler(){
     self.my = eventObject.clientY;
 		if(self.mDown == true){
 			self.checkWave();
+			self.checkSlider();
 		}
   }
 
@@ -213,6 +230,47 @@ function inputHandler(){
 		}
 	}
 
+	//Check if mouse is over a slider and the mouse button
+	//is pressed, if so start changing the knob position of
+	//that slider
+	this.checkSlider = function(){
+		let mdiff = null;
+		let posdiff = null;
+		let reldiff = null;
+		let mx = null;
+		let xd = null;
+		if(self.mx > self.slider1.x + 15 && self.mx < self.slider1.x + self.slider1.xd - 15){
+			if(self.my > self.slider1.y && self.my < self.slider1.y + self.slider1.yd){
+					mx = self.mx - self.slider1.x - 16;
+					xd = self.slider1.xd - 32;
+					mdiff =  self.slider1.xd - (self.slider1.xd - mx);
+					reldiff = mx/xd;
+					posdiff = Math.round(reldiff * 9) + 1;
+					self.slider1.setPosition(posdiff - 1);
+					self.slider1.reDraw(self.canvasContext);
+					self.sine1.setFreq(posdiff);
+					self.sine1.reDraw(self.canvasContext);
+					self.lissajous.calcWaves();
+					self.lissajous.reDraw(self.canvasContext);
+			}
+		}
+		if(self.mx > self.slider2.x + 15 && self.mx < self.slider2.x + self.slider2.xd - 15){
+			if(self.my > self.slider2.y && self.my < self.slider2.y + self.slider2.yd){
+				mx = self.mx - self.slider2.x - 16;
+				xd = self.slider2.xd - 32;
+				mdiff =  self.slider2.xd - (self.slider2.xd - mx);
+				reldiff = mx/xd;
+				posdiff = Math.round(reldiff * 9) + 1;
+				self.slider2.setPosition(posdiff - 1);
+				self.slider2.reDraw(self.canvasContext);
+				self.sine2.setFreq(posdiff);
+				self.sine2.reDraw(self.canvasContext);
+				self.lissajous.calcWaves();
+				self.lissajous.reDraw(self.canvasContext);
+			}
+		}
+	}
+
 	return self;
 }
 
@@ -232,14 +290,41 @@ function Slider(){
   this.y = null;
 
 	//Dimensions of slider
-	this.xd = 280;
-	this.yd = 120;
+	this.xd = 270;
+	this.yd = 30;
 
 	//Slider position
-	this.position = null;
+	this.position = 0;
 
 	//Amount of positions the slider has
-	this.positions = null;
+	this.positions = 10;
+
+	//Getters and setters
+	this.setX = function($val){self.x = $val;}
+	this.setY = function($val){self.y = $val;}
+	this.setPosition = function($val){self.position = $val;}
+
+	this.getX = function(){return self.x;}
+	this.getY = function(){return self.y;}
+
+	this.drawBack = function($canvasContext){
+		$canvasContext.fillStyle = 'green';
+		$canvasContext.fillRect(self.x-1,self.y-1,self.xd+2,self.yd+2);
+	}
+
+	//Draw the entire slider
+	this.reDraw = function($canvasContext){
+		$canvasContext.clearRect(self.x-1, self.y-1, self.xd+2, self.yd+2);
+		self.drawBack($canvasContext);
+		$canvasContext.fillStyle = 'white';
+		$canvasContext.fillRect(self.x + 10, self.y + 10, self.xd - 20, self.yd - 25);
+		let period = (self.xd - 30)/self.positions;
+		for(let i = 0; i < self.positions; i++){
+			$canvasContext.fillText(i + 1,self.x + 15 + period * i,self.y + 26)
+		}
+		$canvasContext.fillStyle = 'grey';
+		$canvasContext.fillRect(self.x + 15 + period * self.position,self.y + 8, 5, 10);
+	}
 
 	return self;
 }
